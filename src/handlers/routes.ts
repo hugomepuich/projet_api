@@ -1,17 +1,22 @@
 import express, { Request, Response } from "express";
-import { roomValidation as RoomRequest, roomValidation, listRoomValidation, updateProductValidation, roomByID } from "./validators/room-validation";
 import { generateValidationErrorMessage } from "./validators/generate-validation-message";
 import { AppDataSource } from "../database/database";
+
 import { Room } from "../database/entities/room";
+import { roomValidation as RoomRequest, roomValidation, listRoomValidation, updateProductValidation, roomByID } from "./validators/room-validation";
 import { RoomUseCase } from "../domain/room-usecase";
+
 import { Movie } from "../database/entities/movie";
 import { movieValidation, movieByID, listMovieValidation } from "./validators/movie-validation";
 import { MovieUseCase } from "../domain/movie-usecase";
 
+import { Seance } from "../database/entities/seance";
+import { seanceValidation, seanceByID, listSeanceValidation } from "./validators/seance-validator";
+import { SeanceUseCase } from "../domain/seance-usecase";
+
 export const initRoutes = (app: express.Express) => {
 
     // ROOM ROUTES
-
     // Create
     app.post("/rooms", async (req: Request, res: Response) => {
 
@@ -32,6 +37,7 @@ export const initRoutes = (app: express.Express) => {
         } catch (error) {
             res.status(500).send({ error: "Internal error" })
         }
+
     });
 
     // Get all
@@ -129,9 +135,7 @@ export const initRoutes = (app: express.Express) => {
         }
     });
 
-
     // MOVIE ROUTES
-
     // POST
     app.post("/movies", async (req: Request, res: Response) => {
 
@@ -251,6 +255,122 @@ export const initRoutes = (app: express.Express) => {
         }
 
     });
+
+    // SEANCE ROUTES
+    // POST
+    app.post("/seances", async (req: Request, res: Response) => {
+
+        const validation = roomValidation.validate(req.body);
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const seanceRequest = validation.value;
+        const seanceRepo = AppDataSource.getRepository(Room);
+
+        try {
+            const seanceCreated = await seanceRepo.save(seanceRequest)
+            res.status(201).send(seanceCreated)
+        } 
+        catch (error) {
+            res.status(500).send({ error: "Internal error" })
+        }
+
+    });
+
+    // GET SEANCE BY ID
+    app.get("/seances/:id", async (req: Request, res: Response) => {
+
+        const validation = seanceByID.validate({...req.params, ...req.body})
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const getSeanceRequest = validation.value
+
+        try {
+            const seanceUsecase = new SeanceUseCase(AppDataSource);
+            const seance = await seanceUsecase.getSeance(getSeanceRequest.id??0)
+            if(seance) {
+                res.status(200).send(seance)
+            }
+            else {
+                res.status(404).send({ error: "Did not find the seance" })
+            }
+        }
+        catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Did not find the seance" })
+        }
+    });
+
+    // GET ALL SEANCES
+    app.get("/seances", async (req: Request, res: Response) => {
+            
+            const validation = listSeanceValidation.validate(req.query)
+    
+            if (validation.error) {
+                res.status(400).send(generateValidationErrorMessage(validation.error.details))
+                return
+            }
+    
+            const listSeanceRequest = validation.value
+    
+            try {
+                const seanceUsecase = new SeanceUseCase(AppDataSource);
+                const listSeances = await seanceUsecase.listAllSeances()/*{ ...listProductRequest, page, limit }*/
+                res.status(200).send(listSeances)
+            } catch (error) {
+                console.log(error)
+                res.status(500).send({ error: "Internal error" })
+            }
+    });
+
+    // DELETE SEANCE
+    app.delete("/seances/:id", async (req: Request, res: Response) => {
+
+        const validation = seanceByID.validate({...req.params, ...req.body});
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const getSeanceRequest = validation.value
+
+        try {
+            const seanceUsecase = new SeanceUseCase(AppDataSource);
+
+            if (getSeanceRequest.id === undefined || getSeanceRequest.id <= 0) {
+                res.status(404).send({ error: "Did not find the seance" })
+            }
+
+            const seance = await seanceUsecase.getSeance(getSeanceRequest.id??0)
+            if(seance) {
+                const deletedSeance = await seanceUsecase.deleteSeance(getSeanceRequest.id??0)
+                if (deletedSeance) {
+                    res.status(200).send({ "message": "Seance deleted" })
+                }
+                else {
+                    res.status(404).send({ error: "Did not find the seance" })
+                }
+            }
+            else {
+                res.status(404).send({ error: "Did not find the seance" })
+            }
+
+        }
+        catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Did not find the seance" })
+        }
+    });
+
+
 
     /*
     
