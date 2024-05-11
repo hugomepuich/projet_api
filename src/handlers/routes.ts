@@ -9,6 +9,9 @@ import { RoomUseCase } from "../domain/room-usecase";
 import { Movie } from "../database/entities/movie";
 import { movieValidation, movieByID, listMovieValidation } from "./validators/movie-validation";
 import { MovieUseCase } from "../domain/movie-usecase";
+import { User } from "../database/entities/user";
+import { userValidation } from "./validators/user-validation";
+import jwt from 'jsonwebtoken';
 
 import { Seance } from "../database/entities/seance";
 import { seanceValidation, seanceByID, listSeanceValidation } from "./validators/seance-validator";
@@ -273,7 +276,7 @@ export const initRoutes = (app: express.Express) => {
         try {
             const seanceCreated = await seanceRepo.save(seanceRequest)
             res.status(201).send(seanceCreated)
-        } 
+        }
         catch (error) {
             res.status(500).send({ error: "Internal error" })
         }
@@ -370,8 +373,90 @@ export const initRoutes = (app: express.Express) => {
         }
     });
 
+    // USER ROUTES
 
+    // POST
+    app.post("/users", async (req: Request, res: Response) => {
+        const validation = userValidation.validate(req.body)
 
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+        const userRequest = validation.value
+        const userRepo = AppDataSource.getRepository(User)
+
+        try {
+            const userCreated = await userRepo.save(userRequest)
+            res.status(201).send(userCreated)
+        } catch (error) {
+            res.status(500).send({ error: "Internal error" })
+        }
+    });
+
+    // User Login
+    /*
+    app.post("/login", async (req: Request, res: Response) => {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            res.status(400).send({ error: "Email and password are required" });
+            return;
+        }
+
+        try {
+            const user = await User.findOne({ email });
+            if (!user) {
+                res.status(401).send({ error: "Invalid email or password" });
+                return;
+            }
+
+            const isPasswordValid = await user.comparePassword(password);
+            if (!isPasswordValid) {
+                res.status(401).send({ error: "Invalid email or password" });
+                return;
+            }
+
+            const token = jwt.sign({ id: user.id }, process
+                .env.JWT_SECRET as string, { expiresIn: "2h" });
+
+            user.token = token;
+            await user.save();
+
+            res.status(200).send({ token });
+        } catch (error) {
+            console.log(error);
+            res.status(500).send({ error: "Internal error" });
+        }
+    });
+
+    // User Logout
+    
+    app.post("/logout", async (req: Request, res: Response) => {
+        const { email } = req.body;
+
+        if (!email) {
+            res.status(400).send({ error: "Email is required" });
+            return;
+        }
+
+        try {
+            const user = await User.findOne({ email });
+            if (!user) {
+                res.status(404).send({ error: "User not found" });
+                return;
+            }
+
+            user.token = null;
+            await user.save();
+
+            res.status(200).send({ message: "User logged out" });
+        } catch (error) {
+            console.log(error);
+            res.status(500).send({ error: "Internal error" });
+        }
+    });
+    */
     /*
     
     app.get("/rooms/:id", async (req: Request, res: Response) => {
