@@ -4,8 +4,13 @@ import { generateValidationErrorMessage } from "./validators/generate-validation
 import { AppDataSource } from "../database/database";
 import { Room } from "../database/entities/room";
 import { RoomUseCase } from "../domain/room-usecase";
+import { Movie } from "../database/entities/movie";
+import { movieValidation, movieByID, listMovieValidation } from "./validators/movie-validation";
+import { MovieUseCase } from "../domain/movie-usecase";
 
 export const initRoutes = (app: express.Express) => {
+
+    // ROOM ROUTES
 
     // Create
     app.post("/rooms", async (req: Request, res: Response) => {
@@ -54,6 +59,7 @@ export const initRoutes = (app: express.Express) => {
         }
     });
 
+    // Get by ID
     app.get("/rooms/:id", async (req: Request, res: Response) => {
 
         const validation = roomByID.validate({...req.params, ...req.body})
@@ -121,6 +127,129 @@ export const initRoutes = (app: express.Express) => {
             console.log(error)
             res.status(500).send({ error: "Did not find the room" })
         }
+    });
+
+
+    // MOVIE ROUTES
+
+    // POST
+    app.post("/movies", async (req: Request, res: Response) => {
+
+        const validation = movieValidation.validate(req.body)
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const movieRequest = validation.value
+        const movieRepo = AppDataSource.getRepository(Movie)
+
+        try {
+            const movieCreated = await movieRepo.save(movieRequest)
+            res.status(201).send(movieCreated)
+        } 
+        catch (error) {
+            res.status(500).send({ error: "Internal error" })
+        }
+
+    });
+
+    // GET MOVIE BY ID
+    app.get("/movies/:id", async (req: Request, res: Response) => {
+        
+        const validation = movieByID.validate({...req.params, ...req.body})
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const getMovieRequest = validation.value
+        try {
+            const movieUsecase = new MovieUseCase(AppDataSource);
+            const movie = await movieUsecase.getMovie(getMovieRequest.id??0)
+            if(movie) {
+                res.status(200).send(movie)
+            }
+            else {
+                res.status(404).send({ error: "Did not find the movie" })
+            }
+        }
+        catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Did not find the movie" })
+        }
+
+
+    });
+
+    // GET ALL MOVIES
+    app.get("/movies", async (req: Request, res: Response) => {
+
+        const validation = listMovieValidation.validate(req.query)
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const listMovieRequest = validation.value
+
+        try {
+            const movieUsecase = new MovieUseCase(AppDataSource);
+            const listMovies = await movieUsecase.listAllMovies()/*{ ...listProductRequest, page, limit }*/
+            res.status(200).send(listMovies)
+        } catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Internal error" })
+        }
+
+    })
+
+    // MODIFY MOVIE
+    app.patch("/movies/:id", async (req: Request, res: Response) => {
+
+    });
+
+    // DELETE MOVIE
+    app.delete("/movies/:id", async (req: Request, res: Response) => {
+
+        const validation = movieByID.validate({...req.params, ...req.body});
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const getMovieRequest = validation.value
+
+        try {
+            const movieUsecase = new MovieUseCase(AppDataSource);
+
+            if (getMovieRequest.id === undefined || getMovieRequest.id <= 0) {
+                res.status(404).send({ error: "Did not find the movie" })
+            }
+
+            const movie = await movieUsecase.getMovie(getMovieRequest.id??0)
+            if(movie) {
+                const deletedMovie = await movieUsecase.deleteMovie(getMovieRequest.id??0)
+                if (deletedMovie) {
+                    res.status(200).send({ "message": "Movie deleted" })
+                }
+                else {
+                    res.status(404).send({ error: "Did not find the movie" })
+                }
+            }
+            else {
+                res.status(404).send({ error: "Did not find the movie" })
+            }
+        }
+        catch (error) {
+            console.log(error)
+            res.status(500).send({ error: "Did not find the movie" })
+        }
+
     });
 
     /*
