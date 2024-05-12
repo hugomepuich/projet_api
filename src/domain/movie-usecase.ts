@@ -33,6 +33,15 @@ export class MovieUseCase {
         return movies
     }
 
+    async updateMovie(id: number, values: {}): Promise<boolean> {
+        const repo = this.db.getRepository(Movie)
+        const movie = await repo.findOneBy({ id })
+        if (movie === null) return false
+
+        await repo.update(movie, values)
+        return true
+    }
+
     // List ALL Movies
     async listAllMovies(): Promise<Movie[]> {
         const repo = this.db.getRepository(Movie)

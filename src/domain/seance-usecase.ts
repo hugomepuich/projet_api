@@ -27,6 +27,15 @@ export class SeanceUseCase {
         return true
     }
 
+    async updateSeance(id: number, values: {}): Promise<boolean> {
+        const repo = this.db.getRepository(Seance)
+        const seance = await repo.findOneBy({ id })
+        if (seance === null) return false
+
+        await repo.update(seance, values)
+        return true
+    }
+
     // List Seances
     async listSeance(filter: ListSeanceFilter): Promise<Seance[]> {
         const repo = this.db.getRepository(Seance)

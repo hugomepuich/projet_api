@@ -16,6 +16,7 @@ import jwt from 'jsonwebtoken';
 import { Seance } from "../database/entities/seance";
 import { seanceValidation, seanceByID, listSeanceValidation } from "./validators/seance-validator";
 import { SeanceUseCase } from "../domain/seance-usecase";
+import { valid } from "joi";
 
 export const initRoutes = (app: express.Express) => {
 
@@ -98,6 +99,29 @@ export const initRoutes = (app: express.Express) => {
     // Modify
     app.patch("/rooms/:id", async (req: Request, res: Response) => {
         
+        const validation = roomValidation.validate(req.body)
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const roomRequest = validation.value
+        const roomRepo = AppDataSource.getRepository(Room)
+
+        try {
+            const updated = await roomRepo.update(req.params.id, roomRequest)
+            if (updated) {
+                res.status(200).send({ "message": "Room updated" })
+            }
+            else {
+                res.status(404).send({ error: "Error" })
+            }
+        }
+        catch (error) {
+            res.status(500).send({ error: "Internal error" })
+        }
+
     });
 
     // Delete
@@ -216,6 +240,29 @@ export const initRoutes = (app: express.Express) => {
 
     // MODIFY MOVIE
     app.patch("/movies/:id", async (req: Request, res: Response) => {
+
+        const validation = movieValidation.validate(req.body)
+
+        if (validation.error) {
+            res.status(400).send(generateValidationErrorMessage(validation.error.details))
+            return
+        }
+
+        const movieRequest = validation.value
+        const movieRepo = AppDataSource.getRepository(Movie)
+
+        try {
+            const updated = await movieRepo.update(req.params.id, movieRequest)
+            if (updated) {
+                res.status(200).send({ "message": "Movie updated" })
+            }
+            else {
+                res.status(404).send({ error: "Error" })
+            }
+        }
+        catch (error) {
+            res.status(500).send({ error: "Internal error" })
+        }
 
     });
 
@@ -372,6 +419,34 @@ export const initRoutes = (app: express.Express) => {
             res.status(500).send({ error: "Did not find the seance" })
         }
     });
+
+    // Modify seance
+    app.patch("/seances/:id", async (req: Request, res: Response) => {
+            
+            const validation = seanceValidation.validate(req.body)
+    
+            if (validation.error) {
+                res.status(400).send(generateValidationErrorMessage(validation.error.details))
+                return
+            }
+    
+            const seanceRequest = validation.value
+            const seanceRepo = AppDataSource.getRepository(Seance)
+    
+            try {
+                const updated = await seanceRepo.update(req.params.id, seanceRequest)
+                if (updated) {
+                    res.status(200).send({ "message": "Seance updated" })
+                }
+                else {
+                    res.status(404).send({ error: "Error" })
+                }
+            }
+            catch (error) {
+                res.status(500).send({ error: "Internal error" })
+            }
+    
+        });
 
     // USER ROUTES
 

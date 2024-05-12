@@ -28,7 +28,15 @@ export class RoomUseCase {
         return true
     }
 
+    // Update Room
+    async updateRoom(id: number, values: {}): Promise<boolean> {
+        const repo = this.db.getRepository(Room)
+        const room = await repo.findOneBy({ id })
+        if (room === null) return false
 
+        await repo.update(room, values)
+        return true
+    }
 
     // List Products
     async listProduct(filter: ListRoomFilter): Promise<Room[]> {

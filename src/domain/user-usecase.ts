@@ -25,6 +25,15 @@ export class UserUseCase {
         return true
     }
 
+    async updateUser(id: number, values: {}): Promise<boolean> {
+        const repo = this.db.getRepository(User)
+        const user = await repo.findOneBy({ id })
+        if (user === null) return false
+
+        await repo.update(user, values)
+        return true
+    }
+
     // List Users
     async listUsers(filter: ListUserFilter): Promise<User[]> {
         const repo = this.db.getRepository(User)
