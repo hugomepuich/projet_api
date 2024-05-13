@@ -318,7 +318,7 @@ export const initRoutes = (app: express.Express) => {
         }
 
         const seanceRequest = validation.value;
-        const seanceRepo = AppDataSource.getRepository(Room);
+        const seanceRepo = AppDataSource.getRepository(Seance);
 
         try {
             const seanceCreated = await seanceRepo.save(seanceRequest)
