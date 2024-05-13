@@ -310,7 +310,7 @@ export const initRoutes = (app: express.Express) => {
     // POST
     app.post("/seances", async (req: Request, res: Response) => {
 
-        const validation = roomValidation.validate(req.body);
+        const validation = seanceValidation.validate(req.body);
 
         if (validation.error) {
             res.status(400).send(generateValidationErrorMessage(validation.error.details))
